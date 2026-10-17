@@ -4,8 +4,10 @@ Project report, methodology, and supporting documentation.
 
 ## Contents
 
-- `methodology.md` — signal-processing pipeline and feature definitions.
-- `report.md` — project report (populate with your findings).
+- `methodology.md` — signal-processing pipeline, feature definitions, and the
+  statistical / severity methods.
+- `report.md` — project report with objective, dataset, results, discussion,
+  limitations and references.
 
 ## Methodology summary
 
@@ -22,8 +24,17 @@ raw signal
    ├─ frequency-domain features    (src.fft_analysis)
    │     dominant frequencies, spectral centroid, band energy ratios
    │
-   └─ condition comparison         (src.comparison)
-         tables + figures in results/
+   ├─ condition comparison         (src.comparison)
+   │     per-recording table + condition-averaged summary
+   │
+   ├─ significance testing         (src.statistical_tests)
+   │     ANOVA / Kruskal-Wallis + pairwise Welch t-tests (Cohen's d)
+   │
+   ├─ severity / damage progression (src.severity)
+   │     indicators vs. 0.007 / 0.014 / 0.021 in fault sizes
+   │
+   └─ report generation            (src.reporting)
+         report.html / report.md with figures + interpretation
 ```
 
 ## Feature reference

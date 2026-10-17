@@ -48,3 +48,7 @@ data/raw/
 data/*.mat
 data/*.csv
 !data/samples/*.csv
+
+# Scratch downloads / Kaggle copies
+raw data/
+*.npz

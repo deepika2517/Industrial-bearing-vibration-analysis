@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,25 @@ def build_comparison_table(signals: Dict[str, object], fs: float) -> pd.DataFram
     time_df = statistical_analysis.features_table(arrays)
     freq_df = fft_analysis.spectrum_table(arrays, fs)
     return time_df.join(freq_df)
+
+
+def aggregate_by_condition(table: pd.DataFrame, conditions: Dict[str, str],
+                           order: Optional[List[str]] = None) -> pd.DataFrame:
+    """Average the per-recording feature table across recordings per condition."""
+    if not conditions:
+        return table
+    labels = [conditions.get(name, "unknown") for name in table.index]
+    aggregated = table.copy()
+    aggregated.insert(0, "condition", labels)
+    aggregated = aggregated.groupby("condition", sort=False).mean(numeric_only=True)
+    if order:
+        existing = [c for c in order if c in aggregated.index]
+        remaining = [c for c in aggregated.index if c not in existing]
+        aggregated = aggregated.loc[existing + remaining]
+    elif "healthy" in aggregated.index:
+        others = [c for c in aggregated.index if c != "healthy"]
+        aggregated = aggregated.loc[["healthy"] + others]
+    return aggregated.round(4)
 
 
 def rank_conditions(table: pd.DataFrame, metric: str = "kurtosis") -> pd.Series:
@@ -55,6 +74,37 @@ def plot_comparison(signals: Dict[str, object], fs: float,
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=150)
     return fig, ax
+
+
+def plot_waveforms(signals: Dict[str, object], fs: float, max_samples: int = 2000,
+                   save_path: Optional[str | Path] = None):
+    """Grid of raw vibration waveforms, one panel per condition."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    arrays = _as_signal_dict(signals)
+    names = list(arrays)
+    cols = 2
+    rows = max(1, -(-len(names) // cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(10, 2.4 * rows), squeeze=False)
+    for ax, name in zip(axes.ravel(), names):
+        sig = np.asarray(arrays[name], dtype=float)
+        count = min(max_samples, len(sig))
+        t = np.arange(count) / fs
+        ax.plot(t, sig[:count], linewidth=0.7, color="steelblue")
+        ax.set_title(name)
+        ax.set_xlabel("time (s)")
+        ax.set_ylabel("amplitude")
+    for ax in axes.ravel()[len(names):]:
+        ax.axis("off")
+    fig.suptitle("Raw vibration waveforms by condition")
+    fig.tight_layout()
+    if save_path:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path, dpi=150)
+    return fig, axes
 
 
 def plot_spectra(signals: Dict[str, object], fs: float,

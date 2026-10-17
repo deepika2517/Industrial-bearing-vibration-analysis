@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from src import comparison, data_loading, preprocessing
+from src import comparison, data_loading, preprocessing, reporting
 from src.data_loading import VibrationSignal
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -71,12 +71,20 @@ def main() -> None:
     print(f"[main] comparison table -> {table_path}")
     print(table.round(4).to_string())
 
+    comparison.plot_waveforms(processed, args.fs, save_path=output / "waveforms.png")
     comparison.plot_comparison(processed, args.fs, metric="rms",
                                save_path=output / "rms_comparison.png")
     comparison.plot_comparison(processed, args.fs, metric="kurtosis",
                                save_path=output / "kurtosis_comparison.png")
     comparison.plot_spectra(processed, args.fs, save_path=output / "spectra_comparison.png")
     print(f"[main] figures written to {output}")
+
+    report = reporting.generate_report(
+        processed, args.fs, output,
+        conditions=data_loading.condition_map(signals),
+    )
+    print(f"[main] report (HTML)     -> {report['html']}")
+    print(f"[main] report (Markdown) -> {report['markdown']}")
     print("[main] done.")
 
 
